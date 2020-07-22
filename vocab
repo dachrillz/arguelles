@@ -1,9 +1,9 @@
-English French
-I       je 	
-you.S   tu
-he      il
-she     elle
-we      nous
-you.P   vous
-they.M  ils
-they.F  elles
+English | French Description Gender Number | Spanish   Description Gender Number ;
+I       | je 	 (desc)	     ()	    ()     | yo        ()          ()     ()     ;
+you     | tu	 (mul, desc) ()     (s)    | tu        ()          ()     ()     ;
+he      | il     ()          ()     ()     | el        ()          (m)    ()     ;
+she     | elle   ()          ()     ()     | ella      ()          (f)    ()     ;
+we      | nous   ()          ()     (p)    | nosotros  ()          ()     (p)    ;
+you     | vous   ()          ()     (p)    | vosotros  ()          ()     (p)    ;
+they    | ils    () 	     (m)    (p)    | ellos     ()          (m)    (p)    ;
+they    | elles  ()          (f)    (p)    | ellas     ()          (f)    (p)    ;

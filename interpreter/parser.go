@@ -22,10 +22,11 @@ func newHeader(language string) *header {
 }
 
 type Parser struct {
-	VocabMap    map[string]Vocab
-	headerMap   map[int]header
-	stack       []Token
-	headerState headerState
+	VocabMap      map[string]Vocab
+	headerMap     map[int]header
+	languageIndex int
+	stack         []Token
+	vocabStack    []TargetVocab
 }
 
 func NewParser() *Parser {
@@ -36,44 +37,115 @@ func NewParser() *Parser {
 	}
 }
 
-func (p *Parser) emitHeader(index int) {
+func (p *Parser) emitHeader() {
 	for i, token := range p.stack {
 		if i == 0 {
-			p.headerMap[index] = *newHeader(token.value)
+			p.headerMap[p.languageIndex] = *newHeader(token.value)
 		} else {
-			p.headerMap[index].headers[i] = token.value
+			p.headerMap[p.languageIndex].headers[i] = token.value
 		}
 	}
 	p.stack = make([]Token, 0)
 }
 
 func (p *Parser) buildHeaders(tokens []Token) (int, error) {
-	index := 0
-	for _, token := range tokens {
+	var i int
+	for i, token := range tokens {
 		if token.typ == newLine {
-			p.emitHeader(index)
-			index++
-			p.headerState = inContent
-			return index, nil
+			p.emitHeader()
+			p.languageIndex = 0
+			return i + 1, nil
 		}
 		if token.typ == bar {
-			p.emitHeader(index)
-			index++
+			p.emitHeader()
+			p.languageIndex++
 			continue
 		} else if token.typ != word {
-			return index, fmt.Errorf("Header was not simple word but was: '%s'", token.value)
+			return i + 1, fmt.Errorf("Header was not simple word but was: '%s'", token.value)
 		}
 		p.stack = append(p.stack, token)
 	}
-	return index, errors.New("Reached end of file before being able to construct headers")
+	p.languageIndex = 0
+	return i + 1, errors.New("Reached end of file before being able to construct headers")
+}
+
+func (p *Parser) pop() Token {
+	var x Token
+	x, p.stack = p.stack[len(p.stack)-1], p.stack[:len(p.stack)-1]
+	return x
+}
+
+func (p *Parser) emitLine() {
+	var glossary string
+	for i, vocabPart := range p.vocabStack {
+		if i == 0 {
+			glossary = vocabPart.Target
+			p.VocabMap[glossary] = Vocab{Source: glossary, TargetMap: make(map[string]TargetVocab, 0)}
+		} else {
+			p.VocabMap[glossary].TargetMap[vocabPart.Language] = vocabPart
+		}
+	}
+	p.languageIndex = 0
+	p.vocabStack = make([]TargetVocab, 0)
+}
+
+func (p *Parser) emitPartialVocab() {
+
+	for i := len(p.stack); i < 4; i++ {
+		p.stack = append(p.stack, Token{value: ""})
+	}
+
+	p.vocabStack = append(p.vocabStack,
+		TargetVocab{
+			Language: p.headerMap[p.languageIndex].language,
+			Target:   p.stack[0].value,
+			Desc:     p.stack[1].value,
+			Gender:   p.stack[2].value,
+			Number:   p.stack[3].value,
+		})
+	p.stack = make([]Token, 0)
+}
+
+func (p *Parser) combineParantheses(tokens []Token) (int, error) {
+	var res = ""
+	for i, token := range tokens {
+		if token.typ == leftParen {
+			continue
+		} else if token.typ == rightParen {
+			p.stack = append(p.stack, Token{value: res, typ: word})
+			return i, nil
+		} else if token.typ == eof {
+			return i, errors.New("Reaced end of file before being able to combine parentheses")
+		} else {
+			res += token.value
+		}
+	}
+	return -1, errors.New("Reaced end of file before being able to combine parentheses")
 }
 
 func (p *Parser) parseLines(tokens []Token) error {
-	var index int
-	for _, token := range tokens {
-		if token.typ == rightParen || token.typ == word {
-			index++
+	for i := 0; i < len(tokens); i++ {
+		if tokens[i].typ == bar {
+			p.emitPartialVocab()
+			p.languageIndex++
+		} else if tokens[i].typ == leftParen {
+			res, err := p.combineParantheses(tokens[i:])
+			i += res
+			if err != nil {
+				return err
+			}
+		} else if tokens[i].typ == newLine {
+			p.emitPartialVocab()
+			p.emitLine()
+		} else {
+			p.stack = append(p.stack, tokens[i])
 		}
+
+	}
+
+	println("Jere")
+	for _, v := range p.VocabMap {
+		fmt.Printf("%v\n", v)
 	}
 
 	return nil

@@ -1,19 +1,5 @@
 package interpreter
 
-type gender int
-type number int
-
-const (
-	singular number = iota
-	plural
-)
-
-const (
-	none gender = iota
-	male
-	female
-)
-
 //Vocab vocabulary item
 type Vocab struct {
 	Source    string
@@ -21,11 +7,11 @@ type Vocab struct {
 }
 
 type TargetVocab struct {
-	Target string
-	Gender gender
-	Number number
-	Desc   string
-	Stats  *statistics
+	Language string
+	Target   string
+	Gender   string
+	Number   string
+	Desc     string
 }
 
 type statistics struct {
