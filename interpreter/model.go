@@ -16,17 +16,16 @@ const (
 
 //Vocab vocabulary item
 type Vocab struct {
-	Source string
+	Source    string
+	TargetMap map[string]TargetVocab
+}
+
+type TargetVocab struct {
 	Target string
 	Gender gender
 	Number number
 	Desc   string
 	Stats  *statistics
-}
-
-//NewVocab constructor
-func NewVocab(english string, target string) *Vocab {
-	return &Vocab{Source: english, Target: target, Stats: &statistics{}}
 }
 
 type statistics struct {

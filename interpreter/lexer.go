@@ -1,7 +1,6 @@
 package interpreter
 
 import (
-	"fmt"
 	"io"
 	"strings"
 	"unicode"
@@ -14,6 +13,7 @@ const (
 	word typ = iota
 	leftParen
 	rightParen
+	bar
 	newLine
 	comma
 	eof
@@ -35,18 +35,6 @@ type Token struct {
 	value string
 }
 
-/*
-English French Description Gender Number
-I       je 	   (desc)	   ()	  ()
-you.S   tu	   ()          ()     (s)
-he      il     ()          ()     ()
-she     elle   ()          ()     ()
-we      nous   ()          ()     ()
-you     vous   ()          ()     (p)
-they    ils    () 	       (m)    ()
-they    elles  ()          (f)    ()
-*/
-
 func NewLexer() *lexer {
 	return &lexer{}
 }
@@ -59,6 +47,13 @@ func (l *lexer) isSingleCharacter(c rune, buf *[]string) bool {
 	switch c {
 	case '(':
 		l.tokens = append(l.tokens, Token{value: "(", typ: leftParen})
+		return true
+	case '|':
+		if len(*buf) > 0 {
+			l.addToken(strings.Join(*buf, ""), word)
+			*buf = make([]string, 0)
+		}
+		l.tokens = append(l.tokens, Token{value: "|", typ: bar})
 		return true
 	case ')':
 		if len(*buf) > 0 {
@@ -128,8 +123,6 @@ func (l *lexer) lex(r io.Reader) ([]Token, error) {
 			return nil, err
 		}
 	}
-
-	fmt.Printf("%v\n", l.tokens)
 	return make([]Token, 0), nil
 
 }
